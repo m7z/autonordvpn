@@ -1,0 +1,33 @@
+# NordVPN: Manual OpenVPN auto-configuration
+
+Create necessary files and setup environment
+to run OpenVPN on boot or manually
+
+## USAGE
+Usage: autonordvpn.sh [OPTIONS]
+
+Options:
+    (NO OPTION)     FULL SETUP.
+    -d, --debug     DEBUG ON (bash -x)
+    -n, --dry-run   PRINT; NO EXECUTE (bash -v -n)
+    -A, --no-auto   NO RUN ON BOOT
+        --undo      REVERSE ALL CHANGES (incl. sudo priv)
+    -h, --help      SHOW THIS HELP TEXT
+Examples:
+    ./autonordvpn.sh        # Default. Prompts for sudo privileges.
+    ./autonordvpn.sh --undo # Undo previous ./autonordvpn.sh
+       
+
+## REMINDER
+Make sure to create /etc/openvpn/auth.conf
+Data here https://my.nordaccount.com/dashboard/nordvpn/manual-configuration/service-credentials/
+```
+<User>
+<Password>
+```
+
+-- 
+
+CUSTOMIZATION: CHECK FOR @modify LINES IN SOURCE FILES 
+
+
