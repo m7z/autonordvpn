@@ -10,6 +10,7 @@ DRY_RUN=0
 NOAUTO=0
 UNDO=0
 HELP=0
+NOAUTH=0 # not an arg
 
 # Parse command-line arguments
 OPTIONS=$(getopt -o dnAuh --long debug,dry-run,no-auto,undo,help -- "$@")
@@ -321,10 +322,11 @@ fi
 
 if [[ ! -f /etc/openvpn/auth.conf ]]; then
     # ALERT: /etc/openvpn/auth.conf
+    NOAUTH=1
     cat << EOF
 ALERT: /etc/openvpn/auth.conf NOT FOUND
 ALERT: Making stub file in /etc/openvpn/auth.conf
-ALERT: Edit /etc/openvpn/auth.conf with your NordVPN service credentials
+ALERT: Edit the file with your NordVPN service credentials
 ALERT: https://my.nordaccount.com/dashboard/nordvpn/manual-configuration/service-credentials/
 ALERT: or systemd will faill with (see journalctl -u openvpn@nordvpn)
 
@@ -361,14 +363,15 @@ INFO: Copy files here /etc/openvpn/
 /etc/openvpn/conf/*.conf  (optional)
 /etc/openvpn/ovpn_udp     (optional)
 INFO: Enable systemd services to run on boot
-systemctl enable openvpn@nordvpn.service
-systemctl enable openvpn.service
-systemctl start openvpn@nordvpn.service
-systemctl start openvpn.service
+$ systemctl enable openvpn@nordvpn.service
+$ systemctl enable openvpn.service
+$ systemctl start openvpn@nordvpn.service
+$ systemctl start openvpn.service
 INFO: Manually run OpenVPN
-/usr/sbin/openvpn --daemon --config /etc/openvpn/nordvpn.conf
-/usr/sbin/openvpn --daemon --config /etc/openvpn/conf/%i.conf (pick 1)
-/usr/sbin/openvpn --daemon --config /etc/openvpn/ovpn_udp/%i.ovpn (pick 1)
+$ /usr/sbin/openvpn --daemon --config /etc/openvpn/nordvpn.conf
+$ /usr/sbin/openvpn --daemon --config /etc/openvpn/conf/%i.conf (pick 1)
+$ /usr/sbin/openvpn --daemon --config /etc/openvpn/ovpn_udp/%i.ovpn (pick 1)
+
 EOF
 
     rm main.txt close.txt region.txt all.txt 2>/dev/null || true
@@ -407,18 +410,42 @@ else
 fi
 
 
+# -- SET CONFIG
+# DO ALWAYS
 sudo mkdir -p /etc/openvpn/conf
 sudo cp nordvpn.conf -r ovpn_udp/ -t /etc/openvpn/
 sudo cp nordvpnclose.conf nordvpneu.conf nordvpnall.conf -t /etc/openvpn/conf/
 
-# Enable systemd units to run on boot
-sudo systemctl enable openvpn@nordvpn.service
-sudo systemctl enable openvpn.service
-sudo systemctl start openvpn@nordvpn.service
-sudo systemctl start openvpn.service
+    if [[ $NOAUTH -eq 1 ]]; then
+        cat << EOF
+INFO: No autoconfigure systemd services
+INFO: Since no valid /etc/openvpn/auth.conf
+INFO: First, create valid auth.conf
+INFO: Then do the following
+
+$ sudo systemctl enable openvpn@nordvpn.service
+$ sudo systemctl enable openvpn.service
+$ sudo systemctl start openvpn@nordvpn.service
+$ sudo systemctl start openvpn.service
+$ sudo systemctl daemon-reload
+
+TIP: Quick test for VPN working
+$ curl ifconfig.me ; echo "" (NordVPN IP or yours?)
+$ ip addr (see tun0 interface?)
+
+EOF
+    else
+        # Enable systemd units to run on boot
+        sudo systemctl enable openvpn@nordvpn.service
+        sudo systemctl enable openvpn.service
+        sudo systemctl start openvpn@nordvpn.service
+        sudo systemctl start openvpn.service
+        sudo systemctl daemon-reload
+    fi
 
 # Clean cwd
 rm main.txt close.txt region.txt all.txt 2>/dev/null || true
+
 # return ../nvpn
 (popd || true) > /dev/null
 
