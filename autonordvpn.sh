@@ -311,7 +311,7 @@ EOF
 
 createconf "nordvpn.conf" "main.txt"
 createconf "nordvpnclose.conf" "close.txt"
-createconf "nordvpneu.conf" "region.txt"
+createconf "nordvpnregion.conf" "region.txt"
 createconf "nordvpnall.conf" "all.txt"
 
 # Clutter -- END
@@ -389,7 +389,7 @@ fi
 # -- RUN ON BOOT
 # Requires sudo privileges
 if [[ -f /etc/openvpn/conf/nordvpnclose.conf || \
-      -f /etc/openvpn/conf/nordvpneu.conf   || \
+      -f /etc/openvpn/conf/nordvpnregion.conf   || \
       -f /etc/openvpn/conf/nordvpnall.conf  || \
       -d /etc/openvpn/ovpn_udp              || \
       -f /etc/openvpn/nordvpn.conf ]]; then
@@ -414,7 +414,7 @@ fi
 # DO ALWAYS
 sudo mkdir -p /etc/openvpn/conf
 sudo cp nordvpn.conf -r ovpn_udp/ -t /etc/openvpn/
-sudo cp nordvpnclose.conf nordvpneu.conf nordvpnall.conf -t /etc/openvpn/conf/
+sudo cp nordvpnclose.conf nordvpnregion.conf nordvpnall.conf -t /etc/openvpn/conf/
 
     if [[ $NOAUTH -eq 1 ]]; then
         cat << EOF
