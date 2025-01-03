@@ -287,15 +287,6 @@ if [[ $DRY_RUN -eq 0 ]]; then
 fi
 
 # DEFINE SERVERS -- @modify TO MATCH
-# TODO(M): @delete
-#MAIN="es"
-#CLOSE="es it fr pt"
-#REGION="es it fr pt de dk no se nl"
-#ALL="*"
-
-# Create serverlists
-#touch main.txt close.txt region.txt all.txt
-
 # Clutter -- BEGIN
 if [[ $DEBUG -eq 1 ]]; then
     echo "DEBUG: OFF, clutter."
@@ -360,29 +351,6 @@ grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+.[0-9]\+ 1194' \
 #: > all.txt
 #grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
 #ovpn_udp/*.nordvpn.com.udp.ovpn > all.txt
-
-## -- @delete OLD
-## Server MAIN fetch
-#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#ovpn_udp/${MAIN}*.nordvpn.com.udp.ovpn > main.txt
-#
-## Server CLOSE fetch
-#for i in $CLOSE; do
-#    grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#    ovpn_udp/${i}*.nordvpn.com.udp.ovpn >> close.txt
-#done
-#
-## Server REGION fetch
-#for i in $REGION; do
-#    grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#    ovpn_udp/${i}*.nordvpn.com.udp.ovpn >> region.txt
-#done
-#
-## Server ALL fetch
-#ALL="*"
-#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#ovpn_udp/${ALL}.nordvpn.com.udp.ovpn > all.txt
-# --
 
 # Function to add duplicate lines with port 443
 addport() {
