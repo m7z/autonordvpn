@@ -294,31 +294,7 @@ if [[ $DEBUG -eq 1 ]]; then
 fi
 
 # -- SERVERS: Grep remote directives (server IPs) from ovpn files
-# OPTION A: Multiple grep calls
-# Clear/create temporary .txt files
-#: > main.txt 
-#for m in "${MAIN[@]}"; do
-#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#    ovpn_udp/"${m}"*.nordvpn.com.udp.ovpn >> main.txt
-#done
-#
-#: > close.txt
-#for c in "${CLOSE[@]}"; do
-#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#    ovpn_udp/"${c}"*.nordvpn.com.udp.ovpn >> close.txt
-#done
-#
-#: > region.txt
-#for r in "${REGION[@]}"; do
-#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#    ovpn_udp/"${r}"*.nordvpn.com.udp.ovpn >> region.txt
-#done
-#
-#: > all.txt
-#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+.[0-9]\+ 1194' \
-#    ovpn_udp/*.nordvpn.com.udp.ovpn > all.txt
-
-# OPTION B: Single grep call
+# OPTION A: Single grep call
 # Servers: MAIN
 : > main.txt 
 for m in "${MAIN[@]}"; do
@@ -352,6 +328,32 @@ grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
 : > all.txt
 grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
 ovpn_udp/*.nordvpn.com.udp.ovpn > all.txt
+
+# OPTION B: Multiple grep calls
+# Slightly more inefficient, don't know if @delete
+# Clear/create temporary .txt files
+#: > main.txt 
+#for m in "${MAIN[@]}"; do
+#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#    ovpn_udp/"${m}"*.nordvpn.com.udp.ovpn >> main.txt
+#done
+#
+#: > close.txt
+#for c in "${CLOSE[@]}"; do
+#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#    ovpn_udp/"${c}"*.nordvpn.com.udp.ovpn >> close.txt
+#done
+#
+#: > region.txt
+#for r in "${REGION[@]}"; do
+#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#    ovpn_udp/"${r}"*.nordvpn.com.udp.ovpn >> region.txt
+#done
+#
+#: > all.txt
+#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+.[0-9]\+ 1194' \
+#    ovpn_udp/*.nordvpn.com.udp.ovpn > all.txt
+
 
 # Function to add duplicate lines with port 443
 addport() {
