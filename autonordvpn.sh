@@ -5,23 +5,24 @@
 set -e
 
 # Initialize flags
-DEBUG=0
-DRY_RUN=0
-NOAUTO=0
-UNDO=0
 HELP=0
-NOAUTH=0 # not an arg
+UNDO=0
+DEBUG=0
+NOAUTO=0
+DRY_RUN=0
+OFFLINE=0
 
 # Parse command-line arguments
-OPTIONS=$(getopt -o dnAuh --long debug,dry-run,no-auto,undo,help -- "$@")
+OPTIONS=$(getopt -o dnAuho --long debug,dry-run,no-auto,undo,help,offline -- "$@")
 eval set -- "$OPTIONS"
 while true; do
     case "$1" in
-        -d|--debug)     DEBUG=1; shift ;;
-        -n|--dry-run)   DRY_RUN=1; shift ;;
-        -A|--no-auto)   NOAUTO=1; shift ;;
         -u|--undo)      UNDO=1; shift ;;
         -h|--help)      HELP=1; shift ;;
+        -d|--debug)     DEBUG=1; shift ;;
+        -A|--no-auto)   NOAUTO=1; shift ;;
+        -n|--dry-run)   DRY_RUN=1; shift ;;
+        -o|--offline)   OFFLINE=1; shift ;;
         --)             shift; break ;;
         *)              echo "Invalid option $1" >&2; exit 1 ;;
     esac
@@ -36,10 +37,11 @@ Options:
     -d, --debug     DEBUG ON (bash -x)
     -n, --dry-run   PRINT; NO EXECUTE (bash -v -n)
     -A, --no-auto   NO RUN ON BOOT
+    -o, --offline   NO OVPN.ZIP DOWNLOAD
         --undo      REVERSE ALL CHANGES (incl. sudo priv)
     -h, --help      SHOW THIS HELP TEXT
 Examples:
-    ./autonordvpn.sh        # Default. Prompts for sudo privileges.
+    ./autonordvpn.sh        # Requires sudo privileges.
     ./autonordvpn.sh --undo # Undo previous ./autonordvpn.sh
 
 EOF
@@ -194,26 +196,35 @@ if [[ ${#missingdep[@]} -gt 0 ]]; then
 fi
 
 # -- FETCH SERVERS
+
+# Temporary working directory
 mkdir -p nvpn/ovpn_udp
 pushd nvpn > /dev/null
 
 # Fetch full server list from NordVPN if online
+# TODO(M): add offline support natively (provide your own ovpn_udp/)
 if [[ $DRY_RUN -eq 0 ]]; then
-    pushd ovpn_udp > /dev/null
-    curl --max-time 10 -o ovpn.zip --show-error --silent \
-    https://downloads.nordcdn.com/configs/archives/servers/ovpn.zip || {
-        echo "Error: Failed to fetch server list." >&2
-        exit 1
-    }
-    unzip -q -j ovpn.zip "ovpn_udp/*" -d .
-    rm ovpn.zip
-    popd > /dev/null
+    if [[ $OFFLINE -eq 0 ]]; then
+        pushd ovpn_udp > /dev/null
+        curl --max-time 10 -o ovpn.zip --show-error --silent \
+        https://downloads.nordcdn.com/configs/archives/servers/ovpn.zip || {
+            echo "Error: Failed to fetch server list." >&2
+            exit 1
+        }
+        unzip -q -j ovpn.zip "ovpn_udp/*" -d .
+        rm ovpn.zip
+        popd > /dev/null
+    # [[ $OFFLINE -eq 1 ]]
+    else
+        echo "INFO: OFFLINE ON"
+        echo "INFO: Expected ovpn_udp"
+    fi
 fi
 
 # DEFINE SERVERS -- @modify TO MATCH
-MAIN="es*"
-CLOSE="es* it* fr* pt*"
-REGION="es* it* fr* pt* de* dk* no* se* nl*"
+MAIN="es"
+CLOSE="es it fr pt"
+REGION="es it fr pt de dk no se nl"
 ALL="*"
 
 # Create serverlists
@@ -226,18 +237,18 @@ if [[ $DEBUG -eq 1 ]]; then
 fi
 # Server $MAIN fetch
 grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-ovpn_udp/${MAIN}.nordvpn.com.udp.ovpn > main.txt
+ovpn_udp/${MAIN}*.nordvpn.com.udp.ovpn > main.txt
 
 # Server $CLOSE fetch
 for i in $CLOSE; do
     grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-    ovpn_udp/${i}.nordvpn.com.udp.ovpn >> close.txt
+    ovpn_udp/${i}*.nordvpn.com.udp.ovpn >> close.txt
 done
 
 # Server $REGION fetch
 for i in $REGION; do
     grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-    ovpn_udp/${i}.nordvpn.com.udp.ovpn >> region.txt
+    ovpn_udp/${i}*.nordvpn.com.udp.ovpn >> region.txt
 done
 
 # Server $ALL fetch
@@ -258,12 +269,14 @@ addport "all.txt"
 
 
 # -- FETCH TLS_KEY AND CA_CERT
-# @modify es* server bias
+# Dynamically fetched in case NordVPN switches key and/or cert
+# It's the same key and cert for any NordVPN ovpn file
+# at least as of 3Jan25
 awk '/<ca>/,/<\/ca>/ { print; if (/<\/ca>/) exit }' \
-ovpn_udp/es*.ovpn > ca_cert.txt
+ovpn_udp/${MAIN}*.ovpn > ca_cert.txt
 # extract the first <tls-auth> block
 awk '/<tls-auth>/,/<\/tls-auth>/ { print; if (/<\/tls-auth>/) exit }' \
-ovpn_udp/es*.ovpn > tls_key.txt
+ovpn_udp/${MAIN}*.ovpn > tls_key.txt
 
 # -- CONF FILES
 createconf() {
@@ -309,10 +322,10 @@ $CONFBASE
 EOF
 }
 
-createconf "nordvpn.conf" "main.txt"
-createconf "nordvpnclose.conf" "close.txt"
-createconf "nordvpnregion.conf" "region.txt"
-createconf "nordvpnall.conf" "all.txt"
+createconf "nordvpn.conf"           "main.txt"
+createconf "nordvpnall.conf"        "all.txt"
+createconf "nordvpnclose.conf"      "close.txt"
+createconf "nordvpnregion.conf"     "region.txt"
 
 # Clutter -- END
 if [[ $DEBUG -eq 1 ]]; then
@@ -320,6 +333,8 @@ if [[ $DEBUG -eq 1 ]]; then
     set -x
 fi
 
+# Do not create a stub auth.conf if it already exists
+NOAUTH=0 
 if [[ ! -f /etc/openvpn/auth.conf ]]; then
     # ALERT: /etc/openvpn/auth.conf
     NOAUTH=1
@@ -365,11 +380,12 @@ INFO: Copy files here /etc/openvpn/
 INFO: Enable systemd services to run on boot
 $ systemctl enable openvpn@nordvpn.service
 $ systemctl enable openvpn.service
-$ systemctl start openvpn@nordvpn.service
-$ systemctl start openvpn.service
+$ systemctl start  openvpn@nordvpn.service
+$ systemctl start  openvpn.service
+$ systemctl daemon-reload
 INFO: Manually run OpenVPN
-$ /usr/sbin/openvpn --daemon --config /etc/openvpn/nordvpn.conf
-$ /usr/sbin/openvpn --daemon --config /etc/openvpn/conf/%i.conf (pick 1)
+$ /usr/sbin/openvpn --daemon --config /etc/openvpn/nordvpn.conf     (default)
+$ /usr/sbin/openvpn --daemon --config /etc/openvpn/conf/%i.conf     (pick 1)
 $ /usr/sbin/openvpn --daemon --config /etc/openvpn/ovpn_udp/%i.ovpn (pick 1)
 
 EOF
@@ -388,17 +404,16 @@ fi
 
 # -- RUN ON BOOT
 # Requires sudo privileges
-if [[ -f /etc/openvpn/conf/nordvpnclose.conf || \
-      -f /etc/openvpn/conf/nordvpnregion.conf   || \
-      -f /etc/openvpn/conf/nordvpnall.conf  || \
-      -d /etc/openvpn/ovpn_udp              || \
-      -f /etc/openvpn/nordvpn.conf ]]; then
+if [[ -f /etc/openvpn/nordvpn.conf              || \
+      -f /etc/openvpn/nordvpnall.conf           || \
+      -f /etc/openvpn/nordvpnclose.conf         || \
+      -f /etc/openvpn/nordvpnregion.conf        || \
+      -d /etc/openvpn/ovpn_udp ]]; then
 
     echo "INFO: OpenVPN config found in /etc/openvpn/"
     read -p "Delete existing files and proceed [y/N]: " choice
     if [[ "${choice,,}" == "y" ]]; then
-        sudo rm -r /etc/openvpn/ovpn_udp \
-                   /etc/openvpn/conf \
+        sudo rm -r /etc/openvpn/ovpn_udp /etc/openvpn/conf \
                    /etc/openvpn/nordvpn.conf 2>/dev/null || true
         echo "INFO: Existing files deleted"
     else
@@ -412,9 +427,8 @@ fi
 
 # -- SET CONFIG
 # DO ALWAYS
-sudo mkdir -p /etc/openvpn/conf
-sudo cp nordvpn.conf -r ovpn_udp/ -t /etc/openvpn/
-sudo cp nordvpnclose.conf nordvpnregion.conf nordvpnall.conf -t /etc/openvpn/conf/
+sudo cp nordvpn*.conf -t /etc/openvpn
+sudo cp -r ovpn_udp/ -t /etc/openvpn
 
     if [[ $NOAUTH -eq 1 ]]; then
         cat << EOF
@@ -450,8 +464,9 @@ rm main.txt close.txt region.txt all.txt 2>/dev/null || true
 (popd || true) > /dev/null
 
 # Reset dry-run & debug
-set +v; set +n; set +x
+set +v; set +n; set +x;
 
 date +"%H:%M:%S"
 echo "END"
+
 # -- END
