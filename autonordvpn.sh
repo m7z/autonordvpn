@@ -369,14 +369,43 @@ addport "all.txt"
 
 
 # -- FETCH TLS_KEY AND CA_CERT
-# Dynamically fetched in case NordVPN switches key and/or cert
-# It's the same key and cert for any NordVPN ovpn file
-# at least as of 3Jan25
+## Dynamically fetched in case NordVPN switches key and/or cert
+## It's the same key and cert for any NordVPN ovpn file
+## at least as of 3Jan25
+#awk '/<ca>/,/<\/ca>/ { print; if (/<\/ca>/) exit }' \
+#ovpn_udp/${MAIN}*.ovpn > ca_cert.txt
+## extract the first <tls-auth> block
+#awk '/<tls-auth>/,/<\/tls-auth>/ { print; if (/<\/tls-auth>/) exit }' \
+#ovpn_udp/${MAIN}*.ovpn > tls_key.txt
+
+# Gather all .ovpn files matching any element of MAIN
+shopt -s nullglob
+declare -a ovpn_files=()
+for m in "${MAIN[@]}"; do
+    ovpn_files+=( ovpn_udp/"${m}"*.ovpn )
+done
+shopt -u nullglob
+
+# If no matches, bail out
+if [[ ${#ovpn_files[@]} -eq 0 ]]; then
+    echo "Error: No .ovpn files found matching 'ovpn_udp/${MAIN}*.ovpn'"
+    exit 1
+fi
+
+# Select a single file at random
+random_index=$((RANDOM % ${#ovpn_files[@]}))
+selected_file="${ovpn_files[$random_index]}"
+echo "INFO: RANDOM SELECT: $selected_file"
+
+# Extract <ca> and <tls-auth> from that single file
 awk '/<ca>/,/<\/ca>/ { print; if (/<\/ca>/) exit }' \
-ovpn_udp/${MAIN}*.ovpn > ca_cert.txt
-# extract the first <tls-auth> block
+    "$selected_file" > ca_cert.txt
+
 awk '/<tls-auth>/,/<\/tls-auth>/ { print; if (/<\/tls-auth>/) exit }' \
-ovpn_udp/${MAIN}*.ovpn > tls_key.txt
+    "$selected_file" > tls_key.txt
+
+echo "INFO: Fetched CA and TLS key from $selected_file"
+
 
 # -- CONF FILES
 createconf() {
