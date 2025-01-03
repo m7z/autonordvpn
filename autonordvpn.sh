@@ -340,31 +340,6 @@ grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
 grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
 ovpn_udp/*.nordvpn.com.udp.ovpn > all.txt
 
-# OPTION B: Multiple grep calls
-# Slightly more inefficient, don't know if @delete
-# Clear/create temporary .txt files
-#: > main.txt 
-#for m in "${MAIN[@]}"; do
-#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#    ovpn_udp/"${m}"*.nordvpn.com.udp.ovpn >> main.txt
-#done
-#
-#: > close.txt
-#for c in "${CLOSE[@]}"; do
-#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#    ovpn_udp/"${c}"*.nordvpn.com.udp.ovpn >> close.txt
-#done
-#
-#: > region.txt
-#for r in "${REGION[@]}"; do
-#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#    ovpn_udp/"${r}"*.nordvpn.com.udp.ovpn >> region.txt
-#done
-#
-#: > all.txt
-#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+.[0-9]\+ 1194' \
-#    ovpn_udp/*.nordvpn.com.udp.ovpn > all.txt
-
 
 # Function to add duplicate lines with port 443
 addport() {
@@ -377,17 +352,6 @@ addport "main.txt"
 addport "close.txt"
 addport "region.txt"
 addport "all.txt"
-
-
-# -- FETCH TLS_KEY AND CA_CERT
-## Dynamically fetched in case NordVPN switches key and/or cert
-## It's the same key and cert for any NordVPN ovpn file
-## at least as of 3Jan25
-#awk '/<ca>/,/<\/ca>/ { print; if (/<\/ca>/) exit }' \
-#ovpn_udp/${MAIN}*.ovpn > ca_cert.txt
-## extract the first <tls-auth> block
-#awk '/<tls-auth>/,/<\/tls-auth>/ { print; if (/<\/tls-auth>/) exit }' \
-#ovpn_udp/${MAIN}*.ovpn > tls_key.txt
 
 # Gather all .ovpn files matching any element of MAIN
 shopt -s nullglob
