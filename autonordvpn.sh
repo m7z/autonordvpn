@@ -4,6 +4,13 @@
 # Exit immediately if non-zero return.
 set -e
 
+# -- NOTE(M): Low priority atm
+# -- TODO
+# Got carried away and this is now too long
+# Too many options and possibilities supported
+# Not my style, consolidate 
+# --
+
 # Initialize flags
 HELP=0
 UNDO=0
@@ -28,9 +35,59 @@ while true; do
     esac
 done
 
+
+# SERVERS: Set default in case no flags are passed @modify
+declare -a MAIN CLOSE REGION
+MAIN=( "es" )
+CLOSE=( "es" "it" "fr" "pt" )
+REGION=( "es" "it" "fr" "pt" "de" "dk" "no" "se" "nl" )
+
+# If servers were passed as arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --main)
+      shift
+      # Capture all subsequent non-flag arguments as MAIN
+      # until we hit another recognized flag or run out of args
+      unset MAIN
+      declare -a MAIN=()
+      while [[ $# -gt 0 && $1 != --close && $1 != --region && $1 != --* ]]; do
+        MAIN+=( "$1" )
+        shift
+      done
+      ;;
+    --close)
+      shift
+      unset CLOSE
+      declare -a CLOSE=()
+      while [[ $# -gt 0 && $1 != --main && $1 != --region && $1 != --* ]]; do
+        CLOSE+=( "$1" )
+        shift
+      done
+      ;;
+    --region)
+      shift
+      unset REGION
+      declare -a REGION=()
+      while [[ $# -gt 0 && $1 != --main && $1 != --close && $1 != --* ]]; do
+        REGION+=( "$1" )
+        shift
+      done
+      ;;
+    *)
+      # Unknown or leftover argument?
+      echo "Error: Unknown argument: $1"
+      exit 1
+      shift
+      ;;
+  esac
+done
+
 if [[ $HELP -eq 1 ]]; then
     cat << EOF
-Usage: autonordvpn.sh [OPTIONS]
+Usage: autonordvpn.sh [OPTIONS] [--main   <country_prefix>] 
+                                [--close  <country_prefix>]
+                                [--region <country_prefix>]
 
 Options:
     (NO OPTION)     FULL SETUP.
@@ -40,9 +97,17 @@ Options:
     -o, --offline   NO OVPN.ZIP DOWNLOAD
         --undo      REVERSE ALL CHANGES (incl. sudo priv)
     -h, --help      SHOW THIS HELP TEXT
+
+Servers:
+    --main <country_prefix>     (e.g., es)
+    --close <country_prefix>    (e.g., es pt fr it)
+    --region <country_prefix>   (e.g., es pt fr it nl de dk se no)
 Examples:
-    ./autonordvpn.sh        # Requires sudo privileges.
-    ./autonordvpn.sh --undo # Undo previous ./autonordvpn.sh
+    ./autonordvpn.sh        # Full auto config
+    ./autonordvpn.sh --undo # Undo autonordvpn config
+
+    # Create configs for these servers instead of default 
+    ./autonordvpn.sh --debug --main es --close es pt --region es pt fr
 
 EOF
     exit 0
@@ -222,38 +287,101 @@ if [[ $DRY_RUN -eq 0 ]]; then
 fi
 
 # DEFINE SERVERS -- @modify TO MATCH
-MAIN="es"
-CLOSE="es it fr pt"
-REGION="es it fr pt de dk no se nl"
-ALL="*"
+# TODO(M): @delete
+#MAIN="es"
+#CLOSE="es it fr pt"
+#REGION="es it fr pt de dk no se nl"
+#ALL="*"
 
 # Create serverlists
-touch main.txt close.txt region.txt all.txt
+#touch main.txt close.txt region.txt all.txt
 
 # Clutter -- BEGIN
 if [[ $DEBUG -eq 1 ]]; then
     echo "DEBUG: OFF, clutter."
     set +x
 fi
-# Server $MAIN fetch
-grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-ovpn_udp/${MAIN}*.nordvpn.com.udp.ovpn > main.txt
 
-# Server $CLOSE fetch
-for i in $CLOSE; do
-    grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-    ovpn_udp/${i}*.nordvpn.com.udp.ovpn >> close.txt
+## OPTION A: Multiple grep calls
+## Clear/create temporary .txt files
+#: > main.txt 
+#
+#for m in "${MAIN[@]}"; do
+#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#    ovpn_udp/"${m}"*.nordvpn.com.udp.ovpn >> main.txt
+#done
+#
+#: > close.txt
+#for c in "${CLOSE[@]}"; do
+#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#    ovpn_udp/"${c}"*.nordvpn.com.udp.ovpn >> close.txt
+#done
+#
+#: > region.txt
+#for r in "${REGION[@]}"; do
+#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#    ovpn_udp/"${r}"*.nordvpn.com.udp.ovpn >> region.txt
+#done
+#
+#: > all.txt
+#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+.[0-9]\+ 1194' \
+#    ovpn_udp/*.nordvpn.com.udp.ovpn > all.txt
+
+# OPTION B: Single grep call
+# Servers: MAIN
+: > main.txt
+grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+ovpn_udp/{MAIN}*.nordvpn.com.udp.ovpn > all.txt
+
+# Servers: CLOSE
+declare -a CLOSE_FILES=()
+for c in "${CLOSE[@]}"; do
+  # Expand each pattern
+  CLOSE_FILES+=( ovpn_udp/"${c}"*.nordvpn.com.udp.ovpn )
 done
 
-# Server $REGION fetch
-for i in $REGION; do
-    grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-    ovpn_udp/${i}*.nordvpn.com.udp.ovpn >> region.txt
+# Then grep them all at once (assuming at least one matching file):
+: > close.txt
+grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+"${CLOSE_FILES[@]}" >> close.txt
+
+# Servers: REGION
+declare -a REGION_FILES=()
+for r in "${REGION[@]}"; do
+  REGION_FILES+=( ovpn_udp/"${r}"*.nordvpn.com.udp.ovpn )
 done
 
-# Server $ALL fetch
+: > region.txt
 grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-ovpn_udp/${ALL}.nordvpn.com.udp.ovpn > all.txt
+"${REGION_FILES[@]}" >> region.txt
+
+# Servers: ALL
+: > all.txt
+grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+ovpn_udp/*.nordvpn.com.udp.ovpn > all.txt
+
+## -- @delete OLD
+## Server MAIN fetch
+#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#ovpn_udp/${MAIN}*.nordvpn.com.udp.ovpn > main.txt
+#
+## Server CLOSE fetch
+#for i in $CLOSE; do
+#    grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#    ovpn_udp/${i}*.nordvpn.com.udp.ovpn >> close.txt
+#done
+#
+## Server REGION fetch
+#for i in $REGION; do
+#    grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#    ovpn_udp/${i}*.nordvpn.com.udp.ovpn >> region.txt
+#done
+#
+## Server ALL fetch
+#ALL="*"
+#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#ovpn_udp/${ALL}.nordvpn.com.udp.ovpn > all.txt
+# --
 
 # Function to add duplicate lines with port 443
 addport() {
