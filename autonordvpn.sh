@@ -239,6 +239,11 @@ EOF
     fi
 fi
 
+# Clutter -- BEGIN
+if [[ $DEBUG -eq 1 ]]; then
+    echo "DEBUG: OFF, clutter."
+    set +x
+fi
 # System packages -- this should come preinstalled w Debian
 missingdep=()
 for cmd in curl awk systemctl mkdir rm cp sudo grep pushd popd unzip echo \
@@ -258,6 +263,12 @@ if [[ ${#missingdep[@]} -gt 0 ]]; then
         echo "ABORT: Cannot proceed without these dependencies"
         exit 1
     fi
+fi
+
+# Clutter -- END
+if [[ $DEBUG -eq 1 ]]; then
+    echo "DEBUG: ON"
+    set -x
 fi
 
 # -- FETCH SERVERS
@@ -496,6 +507,8 @@ else
 FOUND: /etc/openvpn/auth.conf
 ALERT: Make sure it's valid. Only two lines, User and Password.
 EOF
+
+fi
 
 # !NOAUTO, clean, suggest and exit
 if [[ $NOAUTO -eq 1 ]]; then
