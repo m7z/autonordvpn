@@ -4,19 +4,29 @@ Create necessary files and setup environment
 to run OpenVPN on boot or manually
 
 ## USAGE
-Usage: autonordvpn.sh [OPTIONS]
+Usage: autonordvpn.sh [OPTIONS] [--main   <country_prefix>] 
+                                [--close  <country_prefix>]
+                                [--region <country_prefix>]
 
 Options:
     (NO OPTION)     FULL SETUP.
     -d, --debug     DEBUG ON (bash -x)
     -n, --dry-run   PRINT; NO EXECUTE (bash -v -n)
     -A, --no-auto   NO RUN ON BOOT
+    -o, --offline   NO OVPN.ZIP DOWNLOAD
         --undo      REVERSE ALL CHANGES (incl. sudo priv)
     -h, --help      SHOW THIS HELP TEXT
+
+Servers:
+    --main <country_prefix>     (e.g., es)
+    --close <country_prefix>    (e.g., es pt fr it)
+    --region <country_prefix>   (e.g., es pt fr it nl de dk se no)
 Examples:
-    ./autonordvpn.sh        # Default. Prompts for sudo privileges.
-    ./autonordvpn.sh --undo # Undo previous ./autonordvpn.sh
-       
+    ./autonordvpn.sh        # Full auto config
+    ./autonordvpn.sh --undo # Undo autonordvpn config
+
+    # Create configs for these servers instead of default 
+    ./autonordvpn.sh --debug --main es --close es pt --region es pt fr
 
 ## REMINDER
 Make sure to create /etc/openvpn/auth.conf
