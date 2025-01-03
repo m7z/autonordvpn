@@ -302,63 +302,64 @@ if [[ $DEBUG -eq 1 ]]; then
     set +x
 fi
 
-## OPTION A: Multiple grep calls
-## Clear/create temporary .txt files
-#: > main.txt 
-#
-#for m in "${MAIN[@]}"; do
-#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#    ovpn_udp/"${m}"*.nordvpn.com.udp.ovpn >> main.txt
-#done
-#
-#: > close.txt
-#for c in "${CLOSE[@]}"; do
-#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#    ovpn_udp/"${c}"*.nordvpn.com.udp.ovpn >> close.txt
-#done
-#
-#: > region.txt
-#for r in "${REGION[@]}"; do
-#  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-#    ovpn_udp/"${r}"*.nordvpn.com.udp.ovpn >> region.txt
-#done
-#
-#: > all.txt
-#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+.[0-9]\+ 1194' \
-#    ovpn_udp/*.nordvpn.com.udp.ovpn > all.txt
+# -- SERVERS: Grep remote directives (server IPs) from ovpn files
+# OPTION A: Multiple grep calls
+# Clear/create temporary .txt files
+: > main.txt 
 
-# OPTION B: Single grep call
-# Servers: MAIN
-: > main.txt
-grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-ovpn_udp/{MAIN}*.nordvpn.com.udp.ovpn > all.txt
-
-# Servers: CLOSE
-declare -a CLOSE_FILES=()
-for c in "${CLOSE[@]}"; do
-  # Expand each pattern
-  CLOSE_FILES+=( ovpn_udp/"${c}"*.nordvpn.com.udp.ovpn )
+for m in "${MAIN[@]}"; do
+  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+    ovpn_udp/"${m}"*.nordvpn.com.udp.ovpn >> main.txt
 done
 
-# Then grep them all at once (assuming at least one matching file):
 : > close.txt
-grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-"${CLOSE_FILES[@]}" >> close.txt
-
-# Servers: REGION
-declare -a REGION_FILES=()
-for r in "${REGION[@]}"; do
-  REGION_FILES+=( ovpn_udp/"${r}"*.nordvpn.com.udp.ovpn )
+for c in "${CLOSE[@]}"; do
+  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+    ovpn_udp/"${c}"*.nordvpn.com.udp.ovpn >> close.txt
 done
 
 : > region.txt
-grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-"${REGION_FILES[@]}" >> region.txt
+for r in "${REGION[@]}"; do
+  grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+    ovpn_udp/"${r}"*.nordvpn.com.udp.ovpn >> region.txt
+done
 
-# Servers: ALL
 : > all.txt
-grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
-ovpn_udp/*.nordvpn.com.udp.ovpn > all.txt
+grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+.[0-9]\+ 1194' \
+    ovpn_udp/*.nordvpn.com.udp.ovpn > all.txt
+
+## OPTION B: Single grep call
+## Servers: MAIN
+#: > main.txt
+#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#ovpn_udp/{MAIN}*.nordvpn.com.udp.ovpn > all.txt
+#
+## Servers: CLOSE
+#declare -a CLOSE_FILES=()
+#for c in "${CLOSE[@]}"; do
+#  # Expand each pattern
+#  CLOSE_FILES+=( ovpn_udp/"${c}"*.nordvpn.com.udp.ovpn )
+#done
+#
+## Then grep them all at once (assuming at least one matching file):
+#: > close.txt
+#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#"${CLOSE_FILES[@]}" >> close.txt
+#
+## Servers: REGION
+#declare -a REGION_FILES=()
+#for r in "${REGION[@]}"; do
+#  REGION_FILES+=( ovpn_udp/"${r}"*.nordvpn.com.udp.ovpn )
+#done
+#
+#: > region.txt
+#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#"${REGION_FILES[@]}" >> region.txt
+#
+## Servers: ALL
+#: > all.txt
+#grep -h '^remote [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+ 1194' \
+#ovpn_udp/*.nordvpn.com.udp.ovpn > all.txt
 
 ## -- @delete OLD
 ## Server MAIN fetch
