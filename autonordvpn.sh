@@ -11,6 +11,13 @@ set -e
 # Not my style, consolidate 
 # --
 
+# -- NOTE(M): Style format, not strict
+# If exit is successfull (except --help | -h)
+#   date +"%H:%M:%S"; echo "END"; exit 0
+# else
+#   exit 1 (or other than 1)
+
+
 # Initialize flags
 HELP=0
 UNDO=0
@@ -144,10 +151,10 @@ EOF
     declare -a S=() # Services
 
     # Gather files if they exist
-    [[ -d ./nvpn ]] && F+=("./nvpn")
-    [[ -d /etc/openvpn/conf ]] && F+=("/etc/openvpn/conf")
-    [[ -d /etc/openvpn/ovpn_udp ]] && F+=("/etc/openvpn/ovpn_udp")
-    [[ -f /etc/openvpn/auth.conf ]] && F+=("/etc/openvpn/auth.conf")
+    [[ -d ./nvpn ]]                    && F+=("./nvpn")
+    [[ -d /etc/openvpn/conf ]]         && F+=("/etc/openvpn/conf")
+    [[ -d /etc/openvpn/ovpn_udp ]]     && F+=("/etc/openvpn/ovpn_udp")
+    [[ -f /etc/openvpn/auth.conf ]]    && F+=("/etc/openvpn/auth.conf")
     [[ -f /etc/openvpn/nordvpn.conf ]] && F+=("/etc/openvpn/nordvpn.conf")
 
     # Gather services if they are enabled
@@ -160,7 +167,7 @@ EOF
 
     # Exit if none found
     if [[ ${#F[@]} -eq 0 && ${#S[@]} -eq 0 ]]; then
-        echo "FOUND: NOTHING"
+        echo "NOTFOUND: Files or services"
         date +"%H:%M:%S"
         echo "END"
         exit 0
@@ -172,7 +179,7 @@ EOF
         for file in "${F[@]}"; do
             echo "FOUND: $file"
         done
-    else echo "FOUND: NO FILES"
+    else echo "NOTFOUND: FILES"
     fi
 
     # Print services
@@ -180,7 +187,7 @@ EOF
         for serv in "${S[@]}"; do
             echo "FOUND: $serv"
         done
-    else echo "FOUND: NO SERVICES"
+    else echo "NOTFOUND: SERVICES"
     fi
 
     read -r -p "Remove ALL files and disable ALL services? [y/N]: " ch
@@ -199,7 +206,7 @@ EOF
                 done
             fi 
             echo "INFO: UNDO OFF" ;;
-        *)  echo "DID NOT REMOVE ANYTHING"; echo "EXIT"
+        *)  echo "INFO: DID NOT REMOVE ANYTHING"; echo "EXIT"
         ;;
     esac
 
@@ -290,10 +297,17 @@ if [[ $DRY_RUN -eq 0 ]]; then
         unzip -q -j ovpn.zip "ovpn_udp/*" -d .
         rm ovpn.zip
         popd > /dev/null
-    # [[ $OFFLINE -eq 1 ]]
-    else
-        echo "INFO: OFFLINE ON"
-        echo "INFO: Expected ovpn_udp"
+    
+    elif [[ $OFFLINE -eq 1 ]]; then
+        # Search for provided ovpn_udp (servers dir)
+        if [[ ! -d ovpn_udp || \
+              ! -d nvpn/ovpn_udp ]]; then
+            echo "Error: NOTFOUND: ovpn_udp"
+            exit 1
+        fi
+        else
+            echo "INFO: OFFLINE ON"
+            echo "FOUND: ovpn_udp"
     fi
 fi
 
