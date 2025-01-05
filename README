@@ -11,11 +11,10 @@ Usage: autonordvpn.sh [OPTIONS] [--main   <country_prefix>]
                                 [--region <country_prefix>]
 
 Options:
-    (NO OPTION)     FULL SETUP.
     -d, --debug     DEBUG ON (bash -x)
     -n, --dry-run   PRINT; NO EXECUTE (bash -v -n)
-    -A, --no-auto   NO RUN ON BOOT
-    -o, --offline   NO OVPN.ZIP DOWNLOAD. PROVIDE YOUR OWN.
+    -A, --no-auto   NO RUN ON BOOT CONFIGURATION.
+        --offline   NO OVPN.ZIP DOWNLOAD. PROVIDE YOUR OWN.
         --undo      REVERSE ALL CHANGES (incl. sudo priv)
     -h, --help      SHOW THIS HELP TEXT
 

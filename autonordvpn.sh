@@ -123,14 +123,14 @@ Usage: autonordvpn.sh [OPTIONS] [--main   <country_prefix>]
 Options:
     -d, --debug     DEBUG ON (bash -x)
     -n, --dry-run   PRINT; NO EXECUTE (bash -v -n)
-    -A, --no-auto   NO RUN ON BOOT
-    --offline       NO OVPN.ZIP DOWNLOAD
-    --undo          REVERSE ALL CHANGES (incl. sudo priv)
+    -A, --no-auto   NO RUN ON BOOT CONFIGURATION
+        --offline   NO OVPN.ZIP DOWNLOAD. PROVIDE YOUR OWN.
+        --undo      REVERSE ALL CHANGES (incl. sudo priv)
     -h, --help      SHOW THIS HELP TEXT
 
 Servers:
-    --main <country_prefix>     (e.g., es)
-    --close <country_prefix>    (e.g., es pt fr it)
+    --main   <country_prefix>   (e.g., es)
+    --close  <country_prefix>   (e.g., es pt fr it)
     --region <country_prefix>   (e.g., es pt fr it nl de dk se no)
 Examples:
     ./autonordvpn.sh        # Full auto config
