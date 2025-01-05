@@ -143,7 +143,7 @@ EOF
     exit 0
 fi
 
-# Change cwd to makeconf path
+# Change cwd to script path
 cd "$(dirname "$0")"
 
 # Start time
@@ -303,14 +303,36 @@ fi
 
 # -- FETCH SERVERS
 
-# Temporary working directory
-mkdir -p nvpn/ovpn_udp
-pushd nvpn > /dev/null
+if [[ $OFFLINE -eq 1 ]]; then
+    # Did not found user-provided server list
+    if [[ ! -d ovpn_udp ]]; then
+        echo "NOTFOUND: ovpn_udp"
+        echo "Error: OFFLINE requires ovpn_udp in cwd"
+        exit 1
+    elif [[ -d nvpn ]]; then
+        cat << EOF
+FOUND: nvpn/"
+Error: Did you forget to delete it?"
+INFO: OFFLINE: Cannot copy ovpn_udp to nvpn/ovpn_udp if latter exists"
 
-# Fetch full server list from NordVPN if online
-# TODO(M): add offline support natively (provide your own ovpn_udp/)
-if [[ $DRY_RUN -eq 0 ]]; then
-    if [[ $OFFLINE -eq 0 ]]; then
+EOF
+        exit 1
+    fi
+
+    # Found user-provided server list
+    echo "FOUND: ovpn_udp in ./"
+    # Temporary working directory
+    mkdir -p nvpn
+    cp -b -r ovpn_udp -t nvpn/
+    echo "INFO: COPY: ovpn_udp -> nvpn/ovpn_udp"
+    pushd nvpn > /dev/null
+    echo "INFO: OFFLINE ON. Using user-provided ovpn_udp"
+else
+    # OFFLINE OFF: $OFFLINE -eq 0
+    mkdir -p nvpn/ovpn_udp
+    pushd nvpn > /dev/null
+    # Fetch full server list from NordVPN if online
+    if [[ $DRY_RUN -eq 0 ]]; then
         pushd ovpn_udp > /dev/null
         curl --max-time 10 -o ovpn.zip --show-error --silent \
         https://downloads.nordcdn.com/configs/archives/servers/ovpn.zip || {
@@ -320,17 +342,10 @@ if [[ $DRY_RUN -eq 0 ]]; then
         unzip -q -j ovpn.zip "ovpn_udp/*" -d .
         rm ovpn.zip
         popd > /dev/null
-    
-    elif [[ $OFFLINE -eq 1 ]]; then
-        # Search for provided ovpn_udp (servers dir)
-        if [[ ! -d ovpn_udp || \
-              ! -d nvpn/ovpn_udp ]]; then
-            echo "Error: NOTFOUND: ovpn_udp"
-            exit 1
-        fi
-        else
-            echo "INFO: OFFLINE ON"
-            echo "FOUND: ovpn_udp"
+
+    else 
+        echo "INFO: DRY RUN ON"
+        echo "INFO: NO SERVER LIST DOWNLOAD"
     fi
 fi
 
