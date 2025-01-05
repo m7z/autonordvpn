@@ -24,21 +24,45 @@ UNDO=0
 DEBUG=0
 NOAUTO=0
 DRY_RUN=0
+#OUTDIR=""
+#OUTFILE=""
 OFFLINE=0
 
 # Parse command-line arguments
-OPTIONS=$(getopt -o dnAuho --long debug,dry-run,no-auto,undo,help,offline -- "$@")
+OPTIONS=$(getopt -o dnAuh \
+--long debug,dry-run,no-auto,undo,help,offline -- "$@")
 eval set -- "$OPTIONS"
 while true; do
     case "$1" in
-        -u|--undo)      UNDO=1; shift ;;
-        -h|--help)      HELP=1; shift ;;
-        -d|--debug)     DEBUG=1; shift ;;
-        -A|--no-auto)   NOAUTO=1; shift ;;
-        -n|--dry-run)   DRY_RUN=1; shift ;;
-        -o|--offline)   OFFLINE=1; shift ;;
-        --)             shift; break ;;
-        *)              echo "Invalid option $1" >&2; exit 1 ;;
+        -u|--undo)          UNDO=1; shift ;;
+        -h|--help)          HELP=1; shift ;;
+        -d|--debug)         DEBUG=1; shift ;;
+        -A|--no-auto)       NOAUTO=1; shift ;;
+        -n|--dry-run)       DRY_RUN=1; shift ;;
+        --offline)          OFFLINE=1; shift ;;
+
+        # NOTE(M): Allow different {file,dir}path other than default?
+        ##-o|--output-dir) 
+        ##    # Next tokens should be dirpath
+        ##    if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+        ##        echo "Error: --output-dir requires directory path arg." >&2
+        ##        exit 1
+        ##    fi
+        ##    OUTDIR="$2"
+        ##    shift 2 # Consume flag and arg
+        ##    ;;
+        ##-f|--output-file) 
+        ##    # Next tokens should be dirpath
+        ##    if [[ -z "$3" || "${3:0:1}" == "-" ]]; then
+        ##        echo "Error: --output-file requires directory path arg." >&2
+        ##        exit 1
+        ##    fi
+        ##    OUTFILE="$3"
+        ##    shift 2   # Consume flag and arg
+        ##    ;;
+
+        --)                 shift; break ;;
+        *)                  echo "Invalid option $1" >&2; exit 1 ;;
     esac
 done
 
@@ -97,12 +121,11 @@ Usage: autonordvpn.sh [OPTIONS] [--main   <country_prefix>]
                                 [--region <country_prefix>]
 
 Options:
-    (NO OPTION)     FULL SETUP.
     -d, --debug     DEBUG ON (bash -x)
     -n, --dry-run   PRINT; NO EXECUTE (bash -v -n)
     -A, --no-auto   NO RUN ON BOOT
-    -o, --offline   NO OVPN.ZIP DOWNLOAD
-        --undo      REVERSE ALL CHANGES (incl. sudo priv)
+    --offline       NO OVPN.ZIP DOWNLOAD
+    --undo          REVERSE ALL CHANGES (incl. sudo priv)
     -h, --help      SHOW THIS HELP TEXT
 
 Servers:
@@ -317,6 +340,8 @@ if [[ $DEBUG -eq 1 ]]; then
     echo "DEBUG: OFF, clutter."
     set +x
 fi
+
+# -- NOTE(M): Consider refactoring the following into a function
 
 # -- SERVERS: Grep remote directives (server IPs) from ovpn files
 # OPTION A: Single grep call
