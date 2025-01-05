@@ -1,1 +1,9 @@
 nvpn/
+local/
+*.conf
+*.ovpn
+*.zip
+*.out
+*.bin
+*.exe
+*.txt

@@ -477,6 +477,7 @@ fi
 # !NOAUTO, clean, suggest and exit
 if [[ $NOAUTO -eq 1 ]]; then
     cat << EOF 
+
 INFO: NOAUTO set, prepare to exit
 INFO: Copy files here /etc/openvpn/
 /etc/openvpn/nordvpn.conf (mandatory, pick conf)
