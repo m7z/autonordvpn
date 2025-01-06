@@ -18,17 +18,16 @@ set -e
 #   exit 1 (or other than 1)
 
 
+# -- Parse command-line arguments
 # Initialize flags
 HELP=0
 UNDO=0
 DEBUG=0
 NOAUTO=0
 DRY_RUN=0
-#OUTDIR=""
-#OUTFILE=""
 OFFLINE=0
 
-# Parse command-line arguments
+# Support both single and long options
 OPTIONS=$(getopt -o dnAuh \
 --long debug,dry-run,no-auto,undo,help,offline -- "$@")
 eval set -- "$OPTIONS"
@@ -40,40 +39,19 @@ while true; do
         -A|--no-auto)       NOAUTO=1; shift ;;
         -n|--dry-run)       DRY_RUN=1; shift ;;
         --offline)          OFFLINE=1; shift ;;
-
-        # NOTE(M): Allow different {file,dir}path other than default?
-        ##-o|--output-dir) 
-        ##    # Next tokens should be dirpath
-        ##    if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-        ##        echo "Error: --output-dir requires directory path arg." >&2
-        ##        exit 1
-        ##    fi
-        ##    OUTDIR="$2"
-        ##    shift 2 # Consume flag and arg
-        ##    ;;
-        ##-f|--output-file) 
-        ##    # Next tokens should be dirpath
-        ##    if [[ -z "$3" || "${3:0:1}" == "-" ]]; then
-        ##        echo "Error: --output-file requires directory path arg." >&2
-        ##        exit 1
-        ##    fi
-        ##    OUTFILE="$3"
-        ##    shift 2   # Consume flag and arg
-        ##    ;;
-
         --)                 shift; break ;;
         *)                  echo "Invalid option $1" >&2; exit 1 ;;
     esac
 done
 
 
-# SERVERS: Set default in case no flags are passed @modify
+# Set default servers in case no flags are passed @modify
 declare -a MAIN CLOSE REGION
 MAIN=( "es" )
 CLOSE=( "es" "it" "fr" "pt" )
 REGION=( "es" "it" "fr" "pt" "de" "dk" "no" "se" "nl" )
 
-# If servers were passed as arguments
+# If servers were passed as arguments with --main prefix1, --close...
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --main)
@@ -151,25 +129,27 @@ echo "START"
 date +"%H:%M:%S"
 echo "# hi."
 
-# Debug mode
+# MODE: Debug
 if [[ $DEBUG -eq 1 ]]; then
-    echo "INFO: DEBUG ON"
+    echo "MODE: DEBUG ON"
     set -x
 fi
 
-# Dry-run mode
+# MODE: Dry-run
 if [[ $DRY_RUN -eq 1 ]]; then
-    echo "INFO: DRY RUN ON; NO EXECUTE"
+    echo "MODE: DRY RUN ON"
+    echo "INFO: NO EXECUTION"
     set -v
     set -n
 fi
 
+# MODE: Undo
 if [[ $UNDO -eq 1 ]]; then
     cat << EOF
-INFO: UNDO ON
+MODE: UNDO ON
 INFO: UNDO searches /etc/openvpn/ and $(pwd)/nvpn
 EOF
-    # Arrays
+    # Bash arrays
     declare -a F=() # Files
     declare -a S=() # Services
 
@@ -228,7 +208,7 @@ EOF
                     sudo systemctl disable "$serv" || true
                 done
             fi 
-            echo "INFO: UNDO OFF" ;;
+            echo "MODE: UNDO OFF" ;;
         *)  echo "INFO: DID NOT REMOVE ANYTHING"; echo "EXIT"
         ;;
     esac
@@ -253,10 +233,10 @@ EOF
 # OpenVPN package
 if ! dpkg -s openvpn 2>/dev/null | grep -q "install ok installed"; then
     cat << EOF
-WARNING: Unstable check. Used anyways:
+WARN: Unstable check. Used anyways:
 
 dpkg -s openvpn 2>/dev/null | grep -q "install ok installed"
-OUT: OpenVPN not installed
+WARN: OpenVPN not installed
 
 EOF
     read -p "Install OpenVPN? [y/N]: " ch
@@ -264,16 +244,17 @@ EOF
         sudo apt update
         sudo apt install openvpn
     else
-        echo "ABORT: Cannot proceed without OpenVPN"
+        echo "Error: ABORT: Cannot proceed without OpenVPN"
         exit 1
     fi
 fi
 
 # Clutter -- BEGIN
 if [[ $DEBUG -eq 1 ]]; then
-    echo "DEBUG: OFF, clutter."
+    echo "MODE: DEBUG OFF, clutter."
     set +x
 fi
+# -- NOTE(M): Consider deleting missing dependencies check.
 # System packages -- this should come preinstalled w Debian
 missingdep=()
 for cmd in curl awk systemctl mkdir rm cp sudo grep pushd popd unzip echo \
@@ -290,14 +271,15 @@ if [[ ${#missingdep[@]} -gt 0 ]]; then
         sudo apt update
         sudo apt install "${missingdep[@]}"
     else
-        echo "ABORT: Cannot proceed without these dependencies"
+        echo "Error: ABORT: Cannot proceed without these dependencies"
         exit 1
     fi
 fi
+# --
 
 # Clutter -- END
 if [[ $DEBUG -eq 1 ]]; then
-    echo "DEBUG: ON"
+    echo "MODE: DEBUG ON"
     set -x
 fi
 
@@ -326,7 +308,8 @@ EOF
     cp -b -r ovpn_udp -t nvpn/
     echo "INFO: COPY: ovpn_udp -> nvpn/ovpn_udp"
     pushd nvpn > /dev/null
-    echo "INFO: OFFLINE ON. Using user-provided ovpn_udp"
+    echo "MODE: OFFLINE ON"
+    echo "INFO: Using user-provided ovpn_udp"
 else
     # OFFLINE OFF: $OFFLINE -eq 0
     mkdir -p nvpn/ovpn_udp
@@ -344,7 +327,7 @@ else
         popd > /dev/null
 
     else 
-        echo "INFO: DRY RUN ON"
+        echo "MODE: DRY RUN ON"
         echo "INFO: NO SERVER LIST DOWNLOAD"
     fi
 fi
@@ -352,7 +335,7 @@ fi
 # DEFINE SERVERS -- @modify TO MATCH
 # Clutter -- BEGIN
 if [[ $DEBUG -eq 1 ]]; then
-    echo "DEBUG: OFF, clutter."
+    echo "MODE: DEBUG OFF, clutter."
     set +x
 fi
 
@@ -487,7 +470,7 @@ createconf "nordvpnregion.conf"     "region.txt"
 
 # Clutter -- END
 if [[ $DEBUG -eq 1 ]]; then
-    echo "DEBUG: ON"
+    echo "MODE: DEBUG ON"
     set -x
 fi
 
@@ -578,7 +561,7 @@ if [[ -f /etc/openvpn/nordvpn.conf              || \
                    /etc/openvpn/nordvpn.conf 2>/dev/null || true
         echo "INFO: Existing files deleted"
     else
-        echo "INFO: Operation canceled"
+        echo "Error: Operation canceled"
         exit 1
     fi
 else
