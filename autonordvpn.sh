@@ -458,7 +458,7 @@ EOF
     cat << EOF > "$filename"
 # hi.
 # -- START
-# -- file autogen via autonordvpn.sh
+# -- file autogen via github.com/m7z/autonordvpn.sh
 $CONFBASE
 EOF
 }
@@ -477,7 +477,6 @@ fi
 # Do not create a stub auth.conf if it already exists
 NOAUTH=0 
 if [[ ! -f /etc/openvpn/auth.conf ]]; then
-    # ALERT: /etc/openvpn/auth.conf
     NOAUTH=1
     cat << EOF
 ALERT: /etc/openvpn/auth.conf NOT FOUND

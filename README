@@ -5,6 +5,11 @@ to run OpenVPN on boot or manually.
 
 Customize: Check for @modify lines in source
 
+Currently it's unstable, everything has been tested at least once but
+there are no guarantees that all features will work!
+
+It's recommended to do a dry run first, ```./autonordvpn.sh --dry-run```
+
 ## USAGE
 Usage: autonordvpn.sh [OPTIONS] [--main   <country_prefix>] 
                                 [--close  <country_prefix>]
